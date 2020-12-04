@@ -14,6 +14,8 @@ public class MovePlayer : MonoBehaviour
     Vector3 moveDir;
     Animator animator;
     AnimatorStateInfo stateInfo;
+    public Transform enemiesContainer;
+    List<Transform> enemies;
     // Start is called before the first frame update
     void Start()
     {
@@ -21,6 +23,14 @@ public class MovePlayer : MonoBehaviour
         rigidbody = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
         animator = GetComponent<Animator>();
+        InitEnemies();
+    }
+
+    private void InitEnemies()
+    {
+        enemies = new List<Transform>();
+        for (int i = 0; i < enemiesContainer.childCount; i++)
+            enemies.Add(enemiesContainer.GetChild(i));
     }
 
     // Update is called once per frame
@@ -45,8 +55,8 @@ public class MovePlayer : MonoBehaviour
     private void UpdateAnimatorParameters()
     {
         Vector3 characterSpaceDir = transform.InverseTransformDirection(moveDir);
-        animator.SetFloat("Forward", characterSpaceDir.z, 0.15f, Time.fixedDeltaTime);
-        animator.SetFloat("Right", characterSpaceDir.x, 0.15f, Time.fixedDeltaTime);
+        animator.SetFloat("Forward", characterSpaceDir.z, 0.15f, Time.deltaTime);
+        animator.SetFloat("Right", characterSpaceDir.x, 0.15f, Time.deltaTime);
     }
 
 
@@ -90,16 +100,41 @@ public class MovePlayer : MonoBehaviour
             return;//daca e in aer, lasa motorul de fizica sa gestioneze viteza, deci nu mai executa codu de mai jos
         //transform.position += dir * playerSpeed * Time.deltaTime; //suprascriere fortata de pozitie, nu se foloseste cu rigidbody
         float velY = rigidbody.velocity.y; // retinem viteza pe verticala
-        rigidbody.velocity = animator.deltaPosition / Time.deltaTime; //suprascriem viteza cu controlul
+        Vector3 deltaPosition = animator.deltaPosition.magnitude * moveDir;//ca sa se deplaseze in directia exacta
+        rigidbody.velocity = deltaPosition / Time.deltaTime; //suprascriem viteza cu controlul
         rigidbody.velocity = new Vector3(rigidbody.velocity.x,
                                          velY, // pastram componenta verticala calcualta de motorul de fizica
                                          rigidbody.velocity.z);
+    }
+    private Vector3 GetLookDirection()
+    {
+        Vector3 lookDirection = moveDir;
+
+        float minDistance = float.MaxValue;
+        int closestEnemyIndex = -1;
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            float dist = Vector3.Distance(transform.position, enemies[i].position);
+            if (dist < 4f && dist < minDistance)
+            {
+                minDistance = dist;
+                closestEnemyIndex = i;
+            }
+        }
+        if (closestEnemyIndex != -1)
+            lookDirection = enemies[closestEnemyIndex].position - transform.position;
+
+        return lookDirection.normalized;
     }
     private void ApplyRootRotation()
     {
         if (moveDir.magnitude < 0.001 || !stateInfo.IsName("Grounded"))
             return; //rotim doar daca se misca si daca nu e in aer
-        Quaternion newRotation = Quaternion.LookRotation(moveDir); // noua rotatie, ce se uita in directia de miscare
+
+        Vector3 lookDirection = GetLookDirection();
+        // noua rotatie, ce se uita in directia de miscare sau catre inamic:
+        Quaternion newRotation = Quaternion.LookRotation(lookDirection);
+        // suprasscriem rotatia actuala, smoothly cu spherical liniar interpolation(SLERP)
         transform.rotation = Quaternion.Slerp(transform.rotation, newRotation, Time.deltaTime * rotSpeed);
     }
     private void GetMoveDirection()
