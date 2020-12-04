@@ -9,6 +9,8 @@ public class OpponentControl : MonoBehaviour
     public Transform player;
     Animator animator;
     public float attackDistThreshold = 1.5f;
+    public float rotSpeed  = 20f;
+    AnimatorStateInfo stateInfo;
     // Start is called before the first frame update
     void Start()
     {
@@ -21,16 +23,28 @@ public class OpponentControl : MonoBehaviour
     {
         agent.destination = player.position;
         UpdateAnimatorMoveParams();
+        ApplyRootRotation();
         HandleAttack();
     }
 
     private void HandleAttack()
     {
         float dist = Vector3.Distance(transform.position, player.position);
-        if (dist < attackDistThreshold)
+        float rand = UnityEngine.Random.Range(0f, 1f);
+        if (dist < attackDistThreshold && rand < 0.01f)
             animator.SetTrigger("Attack");
     }
+    private void ApplyRootRotation()
+    {
+        if (agent.velocity.magnitude < 0.001)
+            return; //rotim doar daca se misca si daca nu e in aer
 
+        Vector3 lookDirection = (player.position - transform.position).normalized;
+        // noua rotatie, ce se uita in directia de miscare sau catre inamic:
+        Quaternion newRotation = Quaternion.LookRotation(lookDirection);
+        // suprasscriem rotatia actuala, smoothly cu spherical liniar interpolation(SLERP)
+        transform.rotation = Quaternion.Slerp(transform.rotation, newRotation, Time.deltaTime * rotSpeed);
+    }
     private void UpdateAnimatorMoveParams()
     {
         Vector3 characterSpaceDir = transform.InverseTransformDirection(agent.velocity).normalized;

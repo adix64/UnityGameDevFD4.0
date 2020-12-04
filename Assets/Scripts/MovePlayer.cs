@@ -16,6 +16,8 @@ public class MovePlayer : MonoBehaviour
     AnimatorStateInfo stateInfo;
     public Transform enemiesContainer;
     List<Transform> enemies;
+    Transform enemy;
+    Transform head;
     // Start is called before the first frame update
     void Start()
     {
@@ -23,6 +25,7 @@ public class MovePlayer : MonoBehaviour
         rigidbody = GetComponent<Rigidbody>();
         capsule = GetComponent<CapsuleCollider>();
         animator = GetComponent<Animator>();
+        head = animator.GetBoneTransform(HumanBodyBones.Head);
         InitEnemies();
     }
 
@@ -43,7 +46,14 @@ public class MovePlayer : MonoBehaviour
         HandleJump();
         HandleAttack();
     }
+    private void LateUpdate()
+    {
+        if (enemy != null && !stateInfo.IsTag("takeHit"))
+        {
 
+            head.LookAt(enemy.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.UpperChest));
+        }
+    }
     private void HandleAttack()
     {
         if (Input.GetButtonDown("Fire1"))
@@ -122,13 +132,22 @@ public class MovePlayer : MonoBehaviour
             }
         }
         if (closestEnemyIndex != -1)
-            lookDirection = enemies[closestEnemyIndex].position - transform.position;
+        {
+            enemy = enemies[closestEnemyIndex];
+            lookDirection = enemy.position - transform.position;
+            animator.SetFloat("distToOpponent", lookDirection.magnitude);
+        }
+        else
+        {
+            enemy = null;
+            animator.SetFloat("distToOpponent", 5f);
+        }
 
-        return lookDirection.normalized;
+        return Vector3.Scale(lookDirection, new Vector3(1, 0, 1)).normalized;
     }
     private void ApplyRootRotation()
     {
-        if (moveDir.magnitude < 0.001 || !stateInfo.IsName("Grounded"))
+        if (moveDir.magnitude < 0.001 || stateInfo.IsName("Midair"))
             return; //rotim doar daca se misca si daca nu e in aer
 
         Vector3 lookDirection = GetLookDirection();
