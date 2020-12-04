@@ -15,7 +15,7 @@ public class AttackBehaviour : StateMachineBehaviour
 
     // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
+    {//hitbox activ doar in frame-urile in care mana este intinsa (startHitBox -> endHitBox)
         if (stateInfo.normalizedTime > startHitBox && stateInfo.normalizedTime < endHitBox)
             animator.GetBoneTransform(hand).GetComponent<SphereCollider>().enabled = true;
         else
@@ -24,7 +24,7 @@ public class AttackBehaviour : StateMachineBehaviour
 
     // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
+    {// for safety, when forced to exit state
         animator.GetBoneTransform(hand).GetComponent<SphereCollider>().enabled = false;
     }
 

@@ -50,7 +50,6 @@ public class MovePlayer : MonoBehaviour
     {
         if (enemy != null && !stateInfo.IsTag("takeHit"))
         {
-
             head.LookAt(enemy.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.UpperChest));
         }
     }
@@ -61,15 +60,12 @@ public class MovePlayer : MonoBehaviour
             animator.SetTrigger("Attack");
         }
     }
-
     private void UpdateAnimatorParameters()
-    {
+    {//da parametrii de miscare animatorului, in spatiul  local al personajului
         Vector3 characterSpaceDir = transform.InverseTransformDirection(moveDir);
         animator.SetFloat("Forward", characterSpaceDir.z, 0.15f, Time.deltaTime);
         animator.SetFloat("Right", characterSpaceDir.x, 0.15f, Time.deltaTime);
     }
-
-
     private void HandleJump()
     {
         bool grounded = false; //presupun ca nu e pe pamant
@@ -123,7 +119,7 @@ public class MovePlayer : MonoBehaviour
         float minDistance = float.MaxValue;
         int closestEnemyIndex = -1;
         for (int i = 0; i < enemies.Count; i++)
-        {
+        {//daca exista la mai putin de 4m un inamic, ia-l cel mai apropiat
             float dist = Vector3.Distance(transform.position, enemies[i].position);
             if (dist < 4f && dist < minDistance)
             {
@@ -138,7 +134,7 @@ public class MovePlayer : MonoBehaviour
             animator.SetFloat("distToOpponent", lookDirection.magnitude);
         }
         else
-        {
+        {//nu e niciun inamic la mai putin de 4m
             enemy = null;
             animator.SetFloat("distToOpponent", 5f);
         }

@@ -28,7 +28,8 @@ public class OpponentControl : MonoBehaviour
     }
 
     private void HandleAttack()
-    {
+    {//ataca doar la mai putin de 1.5m fata de personaj...
+        //...daca un nr aleator pica intr-un interval cu probabilitate mica
         float dist = Vector3.Distance(transform.position, player.position);
         float rand = UnityEngine.Random.Range(0f, 1f);
         if (dist < attackDistThreshold && rand < 0.01f)
