@@ -24,7 +24,7 @@ public class MovePlayer : MonoBehaviour
     }
 
     // Update is called once per frame
-    private void FixedUpdate()
+    private void Update()
     {
         stateInfo = animator.GetCurrentAnimatorStateInfo(0);
         GetMoveDirection();
@@ -33,6 +33,7 @@ public class MovePlayer : MonoBehaviour
         HandleJump();
         HandleAttack();
     }
+
     private void HandleAttack()
     {
         if (Input.GetButtonDown("Fire1"))
