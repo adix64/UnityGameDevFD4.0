@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 public class MovePlayer : MonoBehaviour
 {
     public float playerSpeed = 3f;
@@ -15,9 +15,15 @@ public class MovePlayer : MonoBehaviour
     Animator animator;
     AnimatorStateInfo stateInfo;
     public Transform enemiesContainer;
+    public Transform weapon;
+    public Transform weaponTip;
     List<Transform> enemies;
     Transform enemy;
     Transform head;
+    Transform chest;
+    Transform spine;
+    Transform rightHand;
+    public GameObject projectilePrefab;
     // Start is called before the first frame update
     void Start()
     {
@@ -26,6 +32,9 @@ public class MovePlayer : MonoBehaviour
         capsule = GetComponent<CapsuleCollider>();
         animator = GetComponent<Animator>();
         head = animator.GetBoneTransform(HumanBodyBones.Head);
+        chest = animator.GetBoneTransform(HumanBodyBones.UpperChest);
+        spine = animator.GetBoneTransform(HumanBodyBones.Spine);
+        rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
         InitEnemies();
     }
 
@@ -45,17 +54,64 @@ public class MovePlayer : MonoBehaviour
         ApplyRootRotation();
         HandleJump();
         HandleAttack();
+        HandleDeath();
     }
+    void HandleDeath()
+    {
+        if (transform.position.y < -40f || stateInfo.IsName("Die") && stateInfo.normalizedTime > .99f)
+        {
+            SceneManager.LoadScene("Basics");
+        }
+    }
+    void HandleWeaponBehaviour()
+    {
+        bool aiming = Input.GetButton("Fire2");
+        animator.SetBool("Aiming", aiming);
+        if (aiming)
+        {
+            animator.SetLayerWeight(1, 1f);
+            weapon.gameObject.SetActive(true);
+            CopyRightHandTransformOnWeapon();
+            head.rotation = Quaternion.LookRotation(cameraTransform.forward);
+            if (Vector3.Dot(weaponTip.right, cameraTransform.forward) < .9f)
+            {
+                Quaternion alignWeaponToCamRot = Quaternion.FromToRotation(weaponTip.right, cameraTransform.forward);
+                alignWeaponToCamRot.ToAngleAxis(out float angle, out Vector3 axis);
+                chest.rotation = Quaternion.AngleAxis(angle * .9f, axis) * chest.rotation;
+            }
+            CopyRightHandTransformOnWeapon();
+
+            if (Input.GetButtonDown("Fire1"))
+            {
+                var go = GameObject.Instantiate(projectilePrefab);
+                go.transform.position = weaponTip.position;
+                go.transform.rotation = weaponTip.rotation;
+            }
+        }
+        else
+        {
+            weapon.gameObject.SetActive(false);
+        }
+    }
+
+    private void CopyRightHandTransformOnWeapon()
+    {
+        weapon.transform.position = rightHand.position;
+        weapon.transform.rotation = rightHand.rotation;
+    }
+
     private void LateUpdate()
     {
         if (enemy != null && !stateInfo.IsTag("takeHit"))
         {
             head.LookAt(enemy.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.UpperChest));
         }
+        
+        HandleWeaponBehaviour();
     }
     private void HandleAttack()
     {
-        if (Input.GetButtonDown("Fire1"))
+        if (Input.GetButtonDown("Fire1") && !animator.GetBool("Aiming"))
         {
             animator.SetTrigger("Attack");
         }
@@ -138,12 +194,14 @@ public class MovePlayer : MonoBehaviour
             enemy = null;
             animator.SetFloat("distToOpponent", 5f);
         }
+        if (animator.GetBool("Aiming"))
+            lookDirection = cameraTransform.forward;
 
         return Vector3.Scale(lookDirection, new Vector3(1, 0, 1)).normalized;
     }
     private void ApplyRootRotation()
     {
-        if (moveDir.magnitude < 0.001 || stateInfo.IsName("Midair"))
+        if (moveDir.magnitude < 0.001 && !animator.GetBool("Aiming") || stateInfo.IsName("Midair"))
             return; //rotim doar daca se misca si daca nu e in aer
 
         Vector3 lookDirection = GetLookDirection();
