@@ -69,12 +69,12 @@ public class MovePlayer : MonoBehaviour
         animator.SetBool("Aiming", aiming);
         if (aiming)
         {
-            animator.SetLayerWeight(1, 1f);
-            weapon.gameObject.SetActive(true);
+            animator.SetLayerWeight(1, 1f); // animeaza mainile cu influenta maxima a layerului ArmsAndTorso
+            weapon.gameObject.SetActive(true); // seteaza arma vizibila cand tinteste
             CopyRightHandTransformOnWeapon();
             head.rotation = Quaternion.LookRotation(cameraTransform.forward);
             if (Vector3.Dot(weaponTip.right, cameraTransform.forward) < .9f)
-            {
+            {//daca arma nu se uita cum trebuie, fa rotatia ce aliniaza directia armei cu directia de privire a camerei
                 Quaternion alignWeaponToCamRot = Quaternion.FromToRotation(weaponTip.right, cameraTransform.forward);
                 alignWeaponToCamRot.ToAngleAxis(out float angle, out Vector3 axis);
                 chest.rotation = Quaternion.AngleAxis(angle * .9f, axis) * chest.rotation;
@@ -82,14 +82,14 @@ public class MovePlayer : MonoBehaviour
             CopyRightHandTransformOnWeapon();
 
             if (Input.GetButtonDown("Fire1"))
-            {
+            {//instantiaza proiectilul la pozitia varfului armei
                 var go = GameObject.Instantiate(projectilePrefab);
                 go.transform.position = weaponTip.position;
                 go.transform.rotation = weaponTip.rotation;
             }
         }
         else
-        {
+        {// seteaza arma invizibila cand nu tinteste
             weapon.gameObject.SetActive(false);
         }
     }
@@ -102,19 +102,17 @@ public class MovePlayer : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (enemy != null && !stateInfo.IsTag("takeHit"))
-        {
+        // suprascriere de transform-uri ale oaselor, se face doar in LateUpdate
+      
+        if (enemy != null && !stateInfo.IsTag("takeHit")) //uite-te la enemy
             head.LookAt(enemy.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.UpperChest));
-        }
         
         HandleWeaponBehaviour();
     }
     private void HandleAttack()
     {
         if (Input.GetButtonDown("Fire1") && !animator.GetBool("Aiming"))
-        {
             animator.SetTrigger("Attack");
-        }
     }
     private void UpdateAnimatorParameters()
     {//da parametrii de miscare animatorului, in spatiul  local al personajului
@@ -194,7 +192,7 @@ public class MovePlayer : MonoBehaviour
             enemy = null;
             animator.SetFloat("distToOpponent", 5f);
         }
-        if (animator.GetBool("Aiming"))
+        if (animator.GetBool("Aiming")) // daca tinteste, intoarce personajul catre camera
             lookDirection = cameraTransform.forward;
 
         return Vector3.Scale(lookDirection, new Vector3(1, 0, 1)).normalized;
